@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>商品目錄 &amp; 標售清單</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#fff;--s1:#f9f9f9;--s2:#efefef;--border:#e0e0e0;--text:#111;--muted:#666;--accent:#1a6ef5;--accent-l:#e8f0fe;--green:#1a7a4a;--green-l:#e6f4ed;--red:#b91c1c;--red-l:#fef2f2;--radius:10px}
+body{font-family:'Noto Sans TC',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+nav{border-bottom:1px solid var(--border);padding:1rem 2rem;position:sticky;top:0;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);z-index:10;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.nav-logo{font-family:'IBM Plex Mono',monospace;font-size:.9rem;font-weight:500;color:var(--text);flex:1}
+.tab-wrap{display:flex;border:0.5px solid var(--border);border-radius:8px;overflow:hidden}
+.tab-btn{padding:.35rem 1rem;font-size:13px;color:var(--muted);background:var(--bg);border:none;border-right:0.5px solid var(--border);cursor:pointer;font-family:'Noto Sans TC',system-ui,sans-serif;transition:background .15s,color .15s}
+.tab-btn:last-child{border-right:none}
+.tab-btn.active{background:var(--accent-l);color:var(--accent);font-weight:500}
+.tab-btn:hover:not(.active){background:var(--s1)}
+.panel{display:none}.panel.active{display:block}
+.hero{max-width:1100px;margin:2.5rem auto 1rem;padding:0 2rem}
+.hero h1{font-size:clamp(1.6rem,4vw,2.6rem);font-weight:700;letter-spacing:-.02em;margin-bottom:.4rem}
+.hero p{color:var(--muted);font-size:.95rem}
+.rule{height:1px;background:var(--border);margin:1.25rem 0}
+.badge{font-size:11px;padding:2px 8px;border-radius:4px;font-weight:500;font-family:'IBM Plex Mono',monospace}
+.badge.green{background:var(--green-l);color:var(--green)}
+.badge.red{background:var(--red-l);color:var(--red)}
+.badge.gray{background:var(--s2);color:var(--muted);border:1px solid var(--border)}
+.btn{display:inline-block;background:var(--accent);color:#fff;font-size:12px;font-weight:500;padding:5px 14px;border-radius:6px;text-decoration:none;white-space:nowrap;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.price-area{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.price-reg,.price-sale{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--accent);font-weight:500}
+.price-orig{font-size:11px;color:var(--muted)}
+.price-na{font-size:12px;color:var(--muted);font-style:italic}
+.price-label{font-size:12px;color:var(--muted)}
+.catalog{max-width:1100px;margin:0 auto 4rem;padding:0 2rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1.25rem}
+.p-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .2s}
+.p-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-2px)}
+.p-img{width:100%;aspect-ratio:4/3;background:var(--s2);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.p-img img{width:100%;height:100%;object-fit:cover}
+.no-img{color:var(--muted);font-size:12px}
+.p-body{padding:1rem;display:flex;flex-direction:column;gap:.45rem;flex:1}
+.p-meta{display:flex;gap:5px;flex-wrap:wrap}
+.p-body h3{font-size:13px;font-weight:700;line-height:1.4;color:var(--text)}
+.p-sku{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+.p-desc{font-size:12px;color:var(--muted);line-height:1.6;max-height:80px;overflow:hidden;position:relative;flex:1}
+.p-desc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1.8rem;background:linear-gradient(transparent,#fff)}
+.p-foot{display:flex;align-items:center;justify-content:space-between;margin-top:.7rem;padding-top:.7rem;border-top:1px solid var(--border);gap:6px;flex-wrap:wrap}
+.auction-hero{max-width:1000px;margin:2.5rem auto 1rem;padding:0 2rem}
+.auction-hero h2{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;letter-spacing:-.02em;margin-bottom:.4rem}
+.auction-sub{color:var(--muted);font-size:.95rem}
+.auction-list{max-width:1000px;margin:0 auto 4rem;padding:0 2rem;display:flex;flex-direction:column;gap:1.5rem}
+.a-post{display:grid;grid-template-columns:280px 1fr;background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:box-shadow .2s}
+.a-post:hover{box-shadow:0 4px 16px rgba(0,0,0,.07)}
+.a-post-img{background:var(--s2);display:flex;align-items:center;justify-content:center}
+.a-post-img img{width:100%;height:100%;object-fit:cover;display:block}
+.a-post-body{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:.6rem}
+.a-post-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.a-date{font-size:12px;color:var(--muted)}
+.a-post-body h3{font-size:1.05rem;font-weight:700;color:var(--text)}
+.a-desc{font-size:.875rem;color:var(--muted);line-height:1.7}
+.a-foot{margin-top:auto;padding-top:.75rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+footer{border-top:1px solid var(--border);text-align:center;padding:1.5rem;color:var(--muted);font-size:12px;font-family:'IBM Plex Mono',monospace}
+@media(max-width:640px){.a-post{grid-template-columns:1fr}.a-post-img{aspect-ratio:4/3}.catalog{padding:0 1rem}.auction-list,.auction-hero{padding:0 1rem}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-logo">CATALOG</div>
+  <div class="tab-wrap">
+    <button class="tab-btn active" onclick="switchTab('catalog',this)">商品目錄</button>
+    <button class="tab-btn" onclick="switchTab('auction',this)">標售清單</button>
+  </div>
+</nav>
+<div class="panel active" id="panel-catalog">
+  <div class="hero"><h1>商品目錄</h1><p>所有商品均可議價，歡迎來信詢價milin.wu@msa.hinet.net。</p><div class="rule"></div></div>
+  <main class="catalog"><article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/09/PANASONIC-DMX-401-e1536057848717.jpg" alt="Panasonic  DMX 401 NM-EFD1A  D/B 1台/Unit 年份year2006 Located in Taiwan在台庫存 Sold-AS-IT" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元), Die Bonder芯片焊接機</span><span class="badge green">有庫存</span></div>
+    <h3>Panasonic  DMX 401 NM-EFD1A  D/B 1台/Unit 年份year2006 Located in Taiwan在台庫存 Sold-AS-IT</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 120000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/09/IMG_5638.jpg, https://mingtzuootech.com/wp-content/uploads/2018/09/IMG_5645.jpg" alt="K&amp;S 8098 Ball bonder 1台/Unit,年分years 2001,Located in Taiwan在台庫存,working condition,Sold As-It" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Ball Bonder晶片值球機, Device inventory設備庫存(計價貨幣為美元)</span><span class="badge green">有庫存</span></div>
+    <h3>K&amp;S 8098 Ball bonder 1台/Unit,年分years 2001,Located in Taiwan在台庫存,working condition,Sold As-It</h3>
+    
+    <div class="p-desc"><strong>Please email to milin.wu@msa.hinet.net for purchase,Thanks.<span class="tw-bilingual-translation" lang="en">Negotiated price.</span>
+Price is EX-work.
+Price is USD(計價貨幣為美元)
+</strong>
+
+<strong> </strong>K&amp;S 8098 Ball bonder
+<strong>fraction of the year:2001
+working condition.
+Located in Taiwan
+Sold As-It
+1 Unit
+</strong>
+
+<strong>欲購買請聯絡milin.wu@msa.hinet.net，謝謝。</strong>
+
+<strong>報價為EX-work</strong>
+
+K&amp;S 8098 Ball bonder 晶片值球機
+機器年分:2001
+機器可運作
+在台庫存
+現況出售
+<strong>庫存1台</strong></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 15000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/09/asm-339-eagle-.png" alt="ASM339Eagle  W/B  焊線機Wire bonder 4台/Unit,年分years 2001,Located in Taiwan在台庫存,working condition,Sold As-It現況出售" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Uncategorized, Device inventory設備庫存(計價貨幣為美元)</span><span class="badge green">有庫存</span></div>
+    <h3>ASM339Eagle  W/B  焊線機Wire bonder 4台/Unit,年分years 2001,Located in Taiwan在台庫存,working condition,Sold As-It現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 7500</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/09/電漿清洗機2.jpg, https://mingtzuootech.com/wp-content/uploads/2018/09/電漿清洗機4.jpg, https://mingtzuootech.com/wp-content/uploads/2018/09/電漿清洗機1-1.jpg" alt="PRS PLASMA CLEANER  電漿清洗機 1台/Unit,年分years 2011,Located in Taiwan在台庫存,working condition,Sold As-It現況出售" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元), Plasma Cleaner 電漿清洗機</span><span class="badge green">有庫存</span></div>
+    <h3>PRS PLASMA CLEANER  電漿清洗機 1台/Unit,年分years 2011,Located in Taiwan在台庫存,working condition,Sold As-It現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 46000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/09/ATM-8600X.jpg" alt="TEIKOKU ATM-860X  TABNG SYSTEM CO,.LTD.  |  4&quot;6&quot;8&quot;自動貼片機    1台/Unit,Located in Taiwan在台庫存,working condition,Sold As-It現況出售" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元), Tabng System貼片機</span><span class="badge green">有庫存</span></div>
+    <h3>TEIKOKU ATM-860X  TABNG SYSTEM CO,.LTD.  |  4&quot;6&quot;8&quot;自動貼片機    1台/Unit,Located in Taiwan在台庫存,working condition,Sold As-It現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 40000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/09/半自動貼片機-1.jpg" alt="STM-800X Automanual Table System CO,.LTD.  |  4&quot;6&quot;8&quot;半自動貼片機    1台/Unit,Located in Taiwan在台庫存,working condition,Sold As-It現況出售" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元), Tabng System貼片機</span><span class="badge green">有庫存</span></div>
+    <h3>STM-800X Automanual Table System CO,.LTD.  |  4&quot;6&quot;8&quot;半自動貼片機    1台/Unit,Located in Taiwan在台庫存,working condition,Sold As-It現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 18000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/09/ATM-8600X.jpg" alt="TEIKOKU ATM-800X Table System  |  4&quot;6&quot;8&quot; 自動貼片機    1台/Unit,Located in Taiwan在台庫存,working condition,Sold As-It現況出售" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元), Tabng System貼片機</span><span class="badge green">有庫存</span></div>
+    <h3>TEIKOKU ATM-800X Table System  |  4&quot;6&quot;8&quot; 自動貼片機    1台/Unit,Located in Taiwan在台庫存,working condition,Sold As-It現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 32000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/09/手動貼片機-1.jpg" alt="Manual Table System  6&quot; 手動貼片機   1台/Unit,Located in Taiwan在台庫存,working condition,Sold As-It現況出售" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元), Tabng System貼片機</span><span class="badge green">有庫存</span></div>
+    <h3>Manual Table System  6&quot; 手動貼片機   1台/Unit,Located in Taiwan在台庫存,working condition,Sold As-It現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 5000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/09/東芝自動模壓機.png" alt="Toshiba Auto Molding  自動模壓機 1台/Unit,Located in Taiwan在台庫存,working condition,Sold As-It現況出售" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元), Moding模壓機</span><span class="badge green">有庫存</span></div>
+    <h3>Toshiba Auto Molding  自動模壓機 1台/Unit,Located in Taiwan在台庫存,working condition,Sold As-It現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 40000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/09/thumb_501_292_20180403153014_328-e1536378290893.jpg" alt="LED 車燈生產線LED vehicle lampwick production line ,LOCATED IN TAIWAN在台庫存,WORKING CONDITION,SOLD AS-IT現況出售" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Uncategorized, Device inventory設備庫存(計價貨幣為美元)</span><span class="badge green">有庫存</span></div>
+    <h3>LED 車燈生產線LED vehicle lampwick production line ,LOCATED IN TAIWAN在台庫存,WORKING CONDITION,SOLD AS-IT現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 60000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/09/ESEC-2007HS.jpg" alt="ESEC上片機2007HS ,LOCATED IN TAIWAN在台庫存,WORKING CONDITION,SOLD AS-IT現況出售" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元), Wafer Mounter晶圓上片機</span><span class="badge green">有庫存</span></div>
+    <h3>ESEC上片機2007HS ,LOCATED IN TAIWAN在台庫存,WORKING CONDITION,SOLD AS-IT現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 22000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/09/ESEC-2008-LOC.jpg" alt="ESEC 2007LOC  Die Bonder芯片銲接機 1台/Unit,Located in Taiwan,在台庫存,working condition,Sold As-It現況出售" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元), Die Bonder芯片焊接機</span><span class="badge green">有庫存</span></div>
+    <h3>ESEC 2007LOC  Die Bonder芯片銲接機 1台/Unit,Located in Taiwan,在台庫存,working condition,Sold As-It現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 22000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/09/ESEC-2007HS.jpg" alt="ESEC 2007 IC8 Die Bonder芯片銲接機 3台/Unit,Located in Taiwan,在台庫存,working condition,Sold As-It現況出售" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Die Bonder芯片焊接機</span><span class="badge green">有庫存</span></div>
+    <h3>ESEC 2007 IC8 Die Bonder芯片銲接機 3台/Unit,Located in Taiwan,在台庫存,working condition,Sold As-It現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 22000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><div class="no-img">無圖片</div></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Uncategorized</span><span class="badge green">有庫存</span></div>
+    <h3>YAMADA CU-869-4&amp;868 injection molder成形機  2台/Unit,Located in Taiwan在台庫存,working condition,Sold As-It現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 33000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><div class="no-img">無圖片</div></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Uncategorized, Device inventory設備庫存(計價貨幣為美元)</span><span class="badge green">有庫存</span></div>
+    <h3>空壓機   11馬力(主機 乾空壓縮機 鋼瓶儲存桶)    3台 1套,Located in Taiwan在台庫存,working condition,Sold As-It現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-na">議價</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><div class="no-img">無圖片</div></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Uncategorized</span><span class="badge green">有庫存</span></div>
+    <h3>空壓機5馬力(主機 乾空壓縮機 鋼瓶儲存桶)  2台    ,Located in Taiwan在台庫存,working condition,Sold As-It現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-na">議價</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/09/000002_1478407148.jpg" alt="Gunilamp L012-8801 Hot AirBalloon熱汽球造型LED藍牙控制七彩智能情境燈泡 ( 紅、白二色 ) 24H到貨 Gunilamp L012-8801 Hot AirBalloon熱汽球造型LED藍牙控制七彩智能情境燈泡 ( 紅、白二色 )" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Uncategorized</span><span class="badge green">有庫存</span></div>
+    <h3>Gunilamp L012-8801 Hot AirBalloon熱汽球造型LED藍牙控制七彩智能情境燈泡 ( 紅、白二色 ) 24H到貨 Gunilamp L012-8801 Hot AirBalloon熱汽球造型LED藍牙控制七彩智能情境燈泡 ( 紅、白二色 )</h3>
+    
+    <div class="p-desc">&nbsp;
+<div class="intro_box">
+<div class="tl"><center>庫存出清2000個請聯絡milin.wu@msa.hinet.net
+謝謝!</center><center><strong>Gunilamp Hot AirBalloon 熱汽球造型 LED 藍牙控制 七彩 智能 情境燈泡 ( 紅、白 二色 )</strong></center>&nbsp;
+
+</div>
+</div>
+<div class="intro_box">
+<div class="tl"><center><iframe src="https://www.youtube.com/embed/GgS6FKcXXUc" width="700" height="395" frameborder="0" data-mce-fragment="1"></iframe></center><center></center><center></center><center></center><center></center><center>
+<strong>*** Gunilamp APP 僅支援 iPhone4 以後機型及 Android 4.4.3 以後版本。</strong></center><center></center><center></center><center>
+<iframe src="https://www.youtube.com/embed/9EEPObblnqA" width="700" height="395" frameborder="0" data-mce-fragment="1"></iframe></center><center></center><center></center><center></center><center></center></div>
+</div>
+<div class="intro_box"><span class="tc"><img src="https://f.ecimg.tw/items/DMAAAEA9005X8JD/i010001_1462949443.jpg" alt="" /></span></div>
+<div class="intro_box"><span class="tc"><img src="https://d.ecimg.tw/items/DMAAAEA9005X8JD/i010002_1462949443.jpg" alt="" /></span></div>
+<div class="intro_box"><span class="tc"><img src="https://b.ecimg.tw/items/DMAAAEA9005X8JD/i010003_1462949443.jpg" alt="" /></span></div>
+<div class="intro_box"><span class="tc"><img src="https://e.ecimg.tw/items/DMAAAEA9005X8JD/i010004_1462949443.jpg" alt="" /></span></div>
+<div class="intro_box"><span class="tc"><img src="https://c.ecimg.tw/items/DMAAAEA9005X8JD/i010005_1462949443.jpg" alt="" /></span></div>
+<div class="intro_box"><span class="tc"><img src="https://f.ecimg.tw/items/DMAAAEA9005X8JD/i010006_1462949443.jpg" alt="" /></span></div>
+<div class="intro_box"><span class="tc"><img src="https://d.ecimg.tw/items/DMAAAEA9005X8JD/i010007_1462949443.jpg" alt="" /></span></div>
+<div class="intro_box"><span class="tc"><img src="https://b.ecimg.tw/items/DMAAAEA9005X8JD/i010008_1462949443.jpg" alt="" /></span></div>
+&nbsp;</div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 13.5</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/10/IMG_20181013_152933.jpg, https://mingtzuootech.com/wp-content/uploads/2018/10/IMG_20181013_152933.jpg, https://mingtzuootech.com/wp-content/uploads/2018/10/IMG_20181013_152943.jpg, https://mingtzuootech.com/wp-content/uploads/2018/10/IMG_20181013_152840.jpg" alt="Kohtaki APL 016SL 馬達 1台/Unit 年份year2004 Located in Taiwan在台庫存 Sold-AS-IT" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Uncategorized, Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>Kohtaki APL 016SL 馬達 1台/Unit 年份year2004 Located in Taiwan在台庫存 Sold-AS-IT</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-na">議價</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/10/STEREOZOOM-4-2.jpg" alt="BAUSCH &amp; LOMB STEREO ZOOM 4 microscope with 20X e.p.s. 顯微鏡" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Uncategorized, Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>BAUSCH &amp; LOMB STEREO ZOOM 4 microscope with 20X e.p.s. 顯微鏡</h3>
+    
+    <div class="p-desc"><strong>Please email to mliin.wu@msa.hinet.net for purchase,Thanks.<span class="tw-bilingual-translation" lang="en">Negotiated price.</span>
+Price is EX-work.</strong>
+
+<strong>BAUSCH &amp; LOMB STEREO ZOOM 4 microscope
+with 20X e.p.s.
+Located in Taiwan
+Sold As-It
+20 Unit
+</strong>
+
+<strong>欲購買請聯絡mliin.wu@msa.hinet.net，謝謝。</strong>
+
+<strong>報價為EX-work
+Price is USD(計價貨幣為美元)
+</strong>
+
+<strong>BAUSCH &amp; LOMB STEREO ZOOM 4 顯微鏡</strong>
+搭配<strong>20X e.p.s.</strong>
+在台庫存
+現況出售
+<strong>庫存20台 </strong></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 180</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2018/10/1515.jpg" alt="Olympus SZ3060 MICROSCOPE顯微鏡 with GSWH 20X / 12.5 eyepieces." onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Uncategorized, Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>Olympus SZ3060 MICROSCOPE顯微鏡 with GSWH 20X / 12.5 eyepieces.</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 250</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2019/01/IMG_0489.jpg" alt="ESI CAREMA INCL ADJUSTING Besi Speare Parts 1001-3550/01" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>ESI CAREMA INCL ADJUSTING Besi Speare Parts 1001-3550/01</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-na">議價</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2019/01/IMG_0492.jpg" alt="SLIDER Besi Speare Parts 1002-7779" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>SLIDER Besi Speare Parts 1002-7779</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-na">議價</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2019/01/IMG_0493.jpg, https://mingtzuootech.com/wp-content/uploads/2019/01/IMG_0493.jpg" alt="DISCO PCB 8-DI (COMM)_PCB FBPCB-0173 HN746" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>DISCO PCB 8-DI (COMM)_PCB FBPCB-0173 HN746</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-na">議價</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2019/01/IMG_0494.jpg" alt="DISCO PCB 8-DI (COMM)_PCB FBPCB-0174 HM061" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>DISCO PCB 8-DI (COMM)_PCB FBPCB-0174 HM061</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-na">議價</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2019/01/IMG_0496.jpg" alt="Panasonic Dp2-20" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>Panasonic Dp2-20</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-na">議價</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2019/01/IMG_0503.jpg, https://mingtzuootech.com/wp-content/uploads/2019/01/IMG_0504.jpg, https://mingtzuootech.com/wp-content/uploads/2019/01/IMG_0502.jpg" alt="CCD XC-ES30" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Parts inventory 零件庫存</span><span class="badge red">無庫存</span></div>
+    <h3>CCD XC-ES30</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 200</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2019/01/IMG_0498.jpg" alt="DISCO切割機波浪板" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>DISCO切割機波浪板</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-na">議價</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2019/02/DSC_0246-e1549975938327.jpg" alt="無塵室用304不鏽鋼材料架" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>無塵室用304不鏽鋼材料架</h3>
+    
+    <div class="p-desc"><blockquote>&nbsp;</blockquote></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 65</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2019/02/DSC_0249.jpg" alt="ASM SG-40" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>ASM SG-40</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 499</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0382.jpg, https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0382.jpg, https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0401.jpg, https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0398.jpg, https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0397.jpg, https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0392.jpg, https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0391.jpg, https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0390.jpg, https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0388.jpg, https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0384.jpg, https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0381.jpg" alt="VARIAN SpectrAA-220Z  with GTA-110Z  原子吸收光譜儀VARIAN SpectrAA-220Z  搭配石墨管霧化器GTA-110Z" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Uncategorized, Device inventory設備庫存(計價貨幣為美元)</span><span class="badge green">有庫存</span></div>
+    <h3>VARIAN SpectrAA-220Z  with GTA-110Z  原子吸收光譜儀VARIAN SpectrAA-220Z  搭配石墨管霧化器GTA-110Z</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 10000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2019/11/IMG_0618-e1573095512973.jpg" alt="K&amp;S 1488 Wire Bonder打線機(議價)Negotiated price. 27台/Unit,年分 ,Located in Taiwan在台庫存,Sold As-It現況出售" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元), Wire Bonder焊線機</span><span class="badge green">有庫存</span></div>
+    <h3>K&amp;S 1488 Wire Bonder打線機(議價)Negotiated price. 27台/Unit,年分 ,Located in Taiwan在台庫存,Sold As-It現況出售</h3>
+    
+    <div class="p-desc"><strong>Please email to milin.wu@msa.hinet.net for purchase,Thanks.<span class="tw-bilingual-translation" lang="en">Negotiated price.</span>
+Price is EX-work.
+Price is USD(計價貨幣為美元)
+</strong>
+
+<strong>K&amp;S 1488 Wire Bonder
+No missing parts.
+Located in Taiwan
+Sold As-It
+27 Units
+</strong>
+
+<strong>欲購買請聯絡milin.wu@msa.hinet.net，謝謝。</strong>
+
+<strong>報價為EX-work</strong>
+
+<strong>K&amp;S 1488打線機 (議價)</strong>
+機器無缺件
+在台庫存
+現況出售
+庫存27台</div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 2200</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0407.jpg, https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0407.jpg, https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0409.jpg, https://mingtzuootech.com/wp-content/uploads/2019/07/DSC_0413.jpg" alt="EYELA COOLACE CCA-1100,working condition, located in Taiwan,Sold As-It,1 Units" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Uncategorized, Device inventory設備庫存(計價貨幣為美元)</span><span class="badge green">有庫存</span></div>
+    <h3>EYELA COOLACE CCA-1100,working condition, located in Taiwan,Sold As-It,1 Units</h3>
+    
+    <div class="p-desc"><strong>Price is EX-work.
+Price is USD(計價貨幣為美元)
+</strong>
+
+<strong>EYELA COOLACE CCA-1100
+working condition.
+Located in Taiwan
+Sold As-It
+1 Units</strong>
+
+<strong>欲購買請聯絡milin.wu@msa.hinet.net，謝謝。</strong>
+
+<strong>報價為EX-work</strong>
+
+EYELA COOLACE CCA-1100
+機器可運作
+在台庫存
+現況出售
+庫存1台</div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 1800</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2021/08/255053.jpg, https://mingtzuootech.com/wp-content/uploads/2021/08/255055.jpg, https://mingtzuootech.com/wp-content/uploads/2021/08/255054.jpg" alt="ULVAC愛發科VS系列真空泵DA-120D  真空幫浦 小型真空泵 膜片式乾式真空幫浦" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Uncategorized, Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>ULVAC愛發科VS系列真空泵DA-120D  真空幫浦 小型真空泵 膜片式乾式真空幫浦</h3>
+    
+    <div class="p-desc"><strong>Please email to milin.wu@msa.hinet.net for purchase,Thanks.<span class="tw-bilingual-translation" lang="en">Negotiated price.</span>
+Price is EX-work.
+Price is USD(計價貨幣為美元)
+</strong>
+
+<strong>ULVAC DA-120D
+</strong>
+<p class="tidied-201803101952-3 tidied-201803114933-3 tidied-201803114561-3 tidied-201803124102-3 tidied-201803258663-3 tidied-201803261320-3 tidied-201806097528-3 tidied-201806093043-3 tidied-201807185936-3 tidied-201807182642-3 tidied-201807238483-3 tidied-201807235681-3">Model: DA-120D
+Voltage: 110 V
+Displacement: 145 liters/min
+Horsepower: 0.4 horsepower (0.3 kilowatts) in Taiwan</p>
+<p class="tidied-201803101952-3 tidied-201803114933-3 tidied-201803114561-3 tidied-201803124102-3 tidied-201803258663-3 tidied-201803261320-3 tidied-201806097528-3 tidied-201806093043-3 tidied-201807185936-3 tidied-201807182642-3 tidied-201807238483-3 tidied-201807235681-3"><strong>Sold As-It
+4 Set
+</strong></p>
+
+
+<strong>欲購買請聯絡milin.wu@msa.hinet.net，謝謝。</strong>
+
+<strong>報價為EX-work
+ULVAC愛發科VS系列真空泵DA-120D
+真空幫浦 小型真空泵 膜片式乾式真空幫浦
+</strong>
+<p class="tidied-201803101952-3 tidied-201803114933-3 tidied-201803114561-3 tidied-201803124102-3 tidied-201803258663-3 tidied-201803261320-3 tidied-201806097528-3 tidied-201806093043-3 tidied-201807185936-3 tidied-201807182642-3 tidied-201807238483-3 tidied-201807235681-3"><span class="tidied-201803114561-6 tidied-201803124102-5 tidied-201803258663-5 tidied-201803261320-5 tidied-201806097528-5 tidied-201806093043-5 tidied-201807185936-5 tidied-201807182642-5 tidied-201807238483-5 tidied-201807235681-5"><span class="tidied-201803114933-8"><span class="tidied-201803101952-4 tidied-201803114933-4 tidied-201803114561-4 tidied-201803124102-4 tidied-201803258663-4 tidied-201803261320-4 tidied-201806097528-4 tidied-201806093043-4 tidied-201807185936-4 tidied-201807182642-4 tidied-201807238483-4 tidied-201807235681-4"><span class="tidied-201802028064-2"><strong> 型號</strong></span></span></span><span class="tidied-201803114561-5"><b>：</b><span class="tidied-201803114561-4 tidied-201803124102-4 tidied-201803258663-4 tidied-201803261320-4 tidied-201806097528-4 tidied-201806093043-4 tidied-201807185936-4 tidied-201807182642-4 tidied-201807238483-4 tidied-201807235681-4"><span class="tidied-201807233798-1">DA-120D</span><b>   </b></span></span></span><span class="tidied-201803114561-4 tidied-201803124102-4 tidied-201803258663-4 tidied-201803261320-4 tidied-201806097528-4 tidied-201806093043-4 tidied-201807185936-4 tidied-201807182642-4 tidied-201807238483-4 tidied-201807235681-4"><strong class="tidied-201803114561-5 tidied-201803124102-6 tidied-201803258663-6 tidied-201803261320-6 tidied-201806097528-6 tidied-201806093043-6 tidied-201807185936-6 tidied-201807182642-6 tidied-201807238483-6 tidied-201807235681-6">
+電壓 : 110 V</strong></span></p>
+<p class="tidied-201803101952-3 tidied-201803114933-3 tidied-201803114561-3 tidied-201803124102-3 tidied-201803258663-3 tidied-201803261320-3 tidied-201806097528-3 tidied-201806093043-3 tidied-201807185936-3 tidied-201807182642-3 tidied-201807238483-3 tidied-201807235681-3"><span class="tidied-201803114561-4 tidied-201803124102-4 tidied-201803258663-4 tidied-201803261320-4 tidied-201806097528-4 tidied-201806093043-4 tidied-201807185936-4 tidied-201807182642-4 tidied-201807238483-4 tidied-201807235681-4"><strong class="tidied-201803114561-5 tidied-201803124102-6 tidied-201803258663-6 tidied-201803261320-6 tidied-201806097528-6 tidied-201806093043-6 tidied-201807185936-6 tidied-201807182642-6 tidied-201807238483-6 tidied-201807235681-6"> 排氣量</strong></span><span class="tidied-201803114561-4 tidied-201803124102-4 tidied-201803258663-4 tidied-201803261320-4 tidied-201806097528-4 tidied-201806093043-4 tidied-201807185936-4 tidied-201807182642-4 tidied-201807238483-4 tidied-201807235681-4"><strong class="tidied-201803114561-5 tidied-201803124102-6 tidied-201803258663-6 tidied-201803261320-6 tidied-201806097528-6 tidied-201806093043-6 tidied-201807185936-6 tidied-201807182642-6 tidied-201807238483-6 tidied-201807235681-6">：145 L/min  </strong></span><span class="tidied-201803114561-4 tidied-201803124102-4 tidied-201803258663-4 tidied-201803261320-4 tidied-201806097528-4 tidied-201806093043-4 tidied-201807185936-4 tidied-201807182642-4 tidied-201807238483-4 tidied-201807235681-4"><strong class="tidied-201803114561-5 tidied-201803124102-6 tidied-201803258663-6 tidied-201803261320-6 tidied-201806097528-6 tidied-201806093043-6 tidied-201807185936-6 tidied-201807182642-6 tidied-201807238483-6 tidied-201807235681-6"> </strong></span><span class="tidied-201803114561-4 tidied-201803124102-4 tidied-201803258663-4 tidied-201803261320-4 tidied-201806097528-4 tidied-201806093043-4 tidied-201807185936-4 tidied-201807182642-4 tidied-201807238483-4 tidied-201807235681-4"><strong class="tidied-201803114561-5 tidied-201803124102-6 tidied-201803258663-6 tidied-201803261320-6 tidied-201806097528-6 tidied-201806093043-6 tidied-201807185936-6 tidied-201807182642-6 tidied-201807238483-6 tidied-201807235681-6">
+馬力</strong><strong class="tidied-201803114561-5 tidied-201803124102-6 tidied-201803258663-6 tidied-201803261320-6 tidied-201806097528-6 tidied-201806093043-6 tidied-201807185936-6 tidied-201807182642-6 tidied-201807238483-6 tidied-201807235681-6">：0.4 hp ( 0.3 kw )    </strong></span>在台庫存
+現況出售
+<strong>庫存4台 </strong></p></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 345</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2021/09/56771_0.jpg, https://mingtzuootech.com/wp-content/uploads/2021/09/56761.jpg, https://mingtzuootech.com/wp-content/uploads/2021/09/56760.jpg, https://mingtzuootech.com/wp-content/uploads/2021/09/56759.jpg, https://mingtzuootech.com/wp-content/uploads/2021/09/56756.jpg, https://mingtzuootech.com/wp-content/uploads/2021/09/56753.jpg, https://mingtzuootech.com/wp-content/uploads/2021/09/56754.jpg, https://mingtzuootech.com/wp-content/uploads/2021/09/56771_0.jpg, https://mingtzuootech.com/wp-content/uploads/2021/09/56772.jpg" alt="K&amp;amp;S 8060 Wire Bonder打線機. 1台/Unit,年分 ,Located in Taiwan在台庫存,working condition before offline,Sold As-It現況出售" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元), Wire Bonder焊線機</span><span class="badge green">有庫存</span></div>
+    <h3>K&amp;amp;S 8060 Wire Bonder打線機. 1台/Unit,年分 ,Located in Taiwan在台庫存,working condition before offline,Sold As-It現況出售</h3>
+    
+    <div class="p-desc"><strong>Please email to milin.wu@msa.hinet.net for purchase,Thanks.<span class="tw-bilingual-translation" lang="en">Negotiated price.</span>
+Price is EX-work.
+Price is USD(計價貨幣為美元)
+</strong>
+
+<strong>K&amp;S 8060 Wire Bonder
+working condition before offline.
+Located in Taiwan
+Sold As-It
+1 Units
+</strong>
+
+<strong>欲購買請聯絡milin.wu@msa.hinet.net，謝謝。</strong>
+
+<strong>報價為EX-work</strong>
+
+<strong>K&amp;S 8060 打線機 (議價)</strong>
+機器無缺件
+在台庫存
+現況出售
+庫存1台
+
+Note:extra 3 units in Malaysia.2021/9/29
+馬來西亞有額外3台可用 2021/9/29</div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 15000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2022/09/BGY-803.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BKA-3150.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BKA-3126.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BKA-2585.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BKA-1880.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BKA-1660.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BKA-1630A.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BKA-1330.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BKA-1230.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BKA-1200A.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BKA-1010.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BKA-230A.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BKA-101A.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BGY-803.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BGY-654.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BGY-605.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BGY-602.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/BGY-601.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/1220.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/铝液.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/硅液.jpg, https://mingtzuootech.com/wp-content/uploads/2022/09/助剂.jpg" alt="各式稀土礦物PPT rare earth element PPT" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Uncategorized, Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>各式稀土礦物PPT rare earth element PPT</h3>
+    
+    <div class="p-desc">If you interested in these rare earth element,please contect milin.wu@msa.hinet.net for more information.
+如對以下的稀土礦物有興趣購買， 請聯絡milin.wu@msa.hinet.net詢問。</div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 1</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2023/06/87443.jpg, https://mingtzuootech.com/wp-content/uploads/2023/06/87443.jpg, https://mingtzuootech.com/wp-content/uploads/2023/06/87444.jpg, https://mingtzuootech.com/wp-content/uploads/2023/06/87445.jpg, https://mingtzuootech.com/wp-content/uploads/2023/06/87447.jpg" alt="DBCHPFP3001-1 SENSOR" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>DBCHPFP3001-1 SENSOR</h3>
+    
+    <div class="p-desc">For purchase,please contact milin.wu@msa.hinet.net for more information.
+DBCHPFP3001-1 SENSOR
+Located Taiwan,globle transport available.
+
+DBCHPFP3001-1 SENSOR 議價，報價請聯繫milin.wu@msa.hinet.net
+Price is USD(計價貨幣為美元)</div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-na">議價</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2023/07/-e1720684320574.jpg" alt="晶圓擴晶機，尺寸可選4吋6吋7吋8吋10吋12吋Wafer expander,4inch,6inch,7inch,8inch,10inch,12inch" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元), Wafer expander晶圓擴晶機</span><span class="badge green">有庫存</span></div>
+    <h3>晶圓擴晶機，尺寸可選4吋6吋7吋8吋10吋12吋Wafer expander,4inch,6inch,7inch,8inch,10inch,12inch</h3>
+    
+    <div class="p-desc"><strong>Please email to milin.wu@msa.hinet.net for purchase,Thanks.<span class="tw-bilingual-translation" lang="en">Negotiated price.</span>
+Price is EX-work.USD</strong>
+
+<strong>欲購買請聯絡milin.wu@msa.hinet.net，謝謝。</strong>
+
+<strong>報價為EX-work,美金計價。</strong>
+
+<span style="vertical-align: inherit;"><span style="vertical-align: inherit;">擴晶機，尺寸可選4吋6吋7吋8吋10吋12吋</span></span>
+<span style="vertical-align: inherit;"><span style="vertical-align: inherit;">Wafer expander,4inch,6inch,7inch,8inch,10inch,12inch </span></span>
+
+<span style="vertical-align: inherit;"><span style="vertical-align: inherit;">可客製化安全開關:左邊增加一個鈕變成4個鈕，跟右邊下壓開關並聯，要兩個同時壓才會導電。</span></span>
+<span style="vertical-align: inherit;"><span style="vertical-align: inherit;">The safety switch can be customized: add a button on the left to become 4 buttons, which are connected in parallel with the push-down switch on the right, and conduct electricity only when two buttons are pressed at the same time.</span></span>
+
+同時出售擴晶環!We also have wafer expansion rings for sale.</div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 2000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2023/07/171713.jpg" alt="擴晶環，尺寸可選4吋6吋7吋8吋10吋12吋 Wafer expander rings,4inch,6inch,7inch,8inch,10inch,12inch" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Parts inventory 零件庫存</span><span class="badge green">有庫存</span></div>
+    <h3>擴晶環，尺寸可選4吋6吋7吋8吋10吋12吋 Wafer expander rings,4inch,6inch,7inch,8inch,10inch,12inch</h3>
+    
+    <div class="p-desc"><strong>Please email to milin.wu@msa.hinet.net for purchase,Thanks.<span class="tw-bilingual-translation" lang="en">Negotiated price.</span>
+Price is EX-work.USD</strong>
+
+<strong>欲購買請聯絡milin.wu@msa.hinet.net，謝謝。</strong>
+
+<strong>報價為EX-work</strong>
+
+<span style="vertical-align: inherit;">擴晶環，尺寸可選4吋6吋7吋8吋10吋12吋</span>
+<span style="vertical-align: inherit;">Wafer expander rings,4inch,6inch,7inch,8inch,10inch,12inch </span></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 3.99</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2024/03/3_0.jpg, https://mingtzuootech.com/wp-content/uploads/2024/03/messageImage_1710303384955-1-scaled.jpg, https://mingtzuootech.com/wp-content/uploads/2024/03/1_0.jpg, https://mingtzuootech.com/wp-content/uploads/2024/03/2_0.jpg, https://mingtzuootech.com/wp-content/uploads/2024/03/3_0.jpg, https://mingtzuootech.com/wp-content/uploads/2024/03/4_0.jpg, https://mingtzuootech.com/wp-content/uploads/2024/03/5_0.jpg" alt="P5000 Applied Materials(代售),LOCATED IN USA,在美庫存,1台/Unit,WORKING CONDITION,SOLD AS-IT現況出售" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元)</span><span class="badge green">有庫存</span></div>
+    <h3>P5000 Applied Materials(代售),LOCATED IN USA,在美庫存,1台/Unit,WORKING CONDITION,SOLD AS-IT現況出售</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-reg">USD 200000</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2024/12/main-machine.jpg, https://mingtzuootech.com/wp-content/uploads/2024/12/Hardware-Sub-fab-Scrubber-and-LL-2-stage-rough-pump.jpg, https://mingtzuootech.com/wp-content/uploads/2024/12/Hardware-Fab-Endstation-with-PP-on-both-LOADLOCK.jpg" alt="Varian EHP 500 MCIMP-08" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元)</span><span class="badge green">有庫存</span></div>
+    <h3>Varian EHP 500 MCIMP-08</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-na">議價</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2024/12/Main-Frame-AC-Gen-Rack1.jpg, https://mingtzuootech.com/wp-content/uploads/2024/12/Main-Frame-AC-Gen-Rack.jpg, https://mingtzuootech.com/wp-content/uploads/2024/12/Neslab-Cryo-Controllers-Compressor.jpg, https://mingtzuootech.com/wp-content/uploads/2024/12/SERIAL-NUM.jpg, https://mingtzuootech.com/wp-content/uploads/2024/12/System-Controllers.jpg" alt="AMAT ENDURA 5500 METAL-17" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元)</span><span class="badge green">有庫存</span></div>
+    <h3>AMAT ENDURA 5500 METAL-17</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-na">議價</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article>
+<article class="p-card">
+  <div class="p-img"><img src="https://mingtzuootech.com/wp-content/uploads/2024/12/System-Controllers-1.jpg, https://mingtzuootech.com/wp-content/uploads/2024/12/Chamber-Body-Suf3.jpg, https://mingtzuootech.com/wp-content/uploads/2024/12/SERIAL-NUMBER.jpg, https://mingtzuootech.com/wp-content/uploads/2024/12/Serial-Num-Asset-2.jpg, https://mingtzuootech.com/wp-content/uploads/2024/12/MAIN.jpg, https://mingtzuootech.com/wp-content/uploads/2024/12/Main-Frame-AC-Gen.jpg, https://mingtzuootech.com/wp-content/uploads/2024/12/Main-Frame-AC-Gen-Rack-1.jpg, https://mingtzuootech.com/wp-content/uploads/2024/12/Chamber-Body-SufAB2.jpg, https://mingtzuootech.com/wp-content/uploads/2024/12/Chamber-Body-Sufab.jpg" alt="AMAT ENDURA 5500 METAL-27" onerror="this.style.display='none'"></div>
+  <div class="p-body">
+    <div class="p-meta"><span class="badge gray">Device inventory設備庫存(計價貨幣為美元)</span><span class="badge green">有庫存</span></div>
+    <h3>AMAT ENDURA 5500 METAL-27</h3>
+    
+    <div class="p-desc"></div>
+    <div class="p-foot">
+      <div class="price-area"><span class="price-na">議價</span></div>
+      <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡詢價</a>
+    </div>
+  </div>
+</article></main>
+</div>
+<div class="panel" id="panel-auction">
+<div class="auction-hero">
+  <h2>標售清單</h2>
+  <p class="auction-sub">以下為本次標售項目，歡迎來信詢問詳情。</p>
+</div>
+<div class="auction-list">
+  <!-- 標售項目範例：複製下方 .a-post 區塊新增更多項目 -->
+  <article class="a-post">
+    <div class="a-post-img">
+      <img src="https://via.placeholder.com/480x320?text=圖片" alt="標售項目圖片" onerror="this.style.display='none'">
+    </div>
+    <div class="a-post-body">
+      <div class="a-post-meta">
+        <span class="badge green">良好</span>
+        <span class="a-date">📅 2024-01-01</span>
+      </div>
+      <h3>在此填入設備名稱</h3>
+      <p class="a-desc">在此填入設備說明、年份、規格、使用狀況等資訊。</p>
+      <div class="a-foot">
+        <div class="price-area"><span class="price-label">底價</span><span class="price-reg">USD 0000</span></div>
+        <a class="btn" href="mailto:milin.wu@msa.hinet.net">聯絡競標</a>
+      </div>
+    </div>
+  </article>
+  <!-- 複製以上區塊新增更多項目 -->
+</div></div>
+<footer>Generated from milinwu-mingtzuootech,email:milin.wu@msa.hinet.net · 42 products</footer>
+<script>
+function switchTab(name,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
